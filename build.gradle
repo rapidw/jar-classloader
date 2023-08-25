@@ -13,7 +13,7 @@ group = "io.rapidw.utils"
 description = "Rapidw Jar Class Loader"
 
 ext {
-    projectUrl = 'https://github.com/rapidw/mqtt-client'
+    projectUrl = 'https://github.com/rapidw/jar-classloader'
     vcsUrl = "${projectUrl}.git"
 }
 
