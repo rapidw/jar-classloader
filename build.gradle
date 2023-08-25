@@ -1,0 +1,128 @@
+plugins {
+    id 'java'
+    id 'groovy'
+    id 'jvm-test-suite'
+    id 'signing'
+    id 'maven-publish'
+    id "net.researchgate.release" version "3.0.2"
+    id "io.github.gradle-nexus.publish-plugin" version "2.0.0-rc-1"
+    id "com.github.hierynomus.license" version "0.16.1"
+}
+
+group = "io.rapidw.utils"
+description = "Rapidw Jar Class Loader"
+
+ext {
+    projectUrl = 'https://github.com/rapidw/mqtt-client'
+    vcsUrl = "${projectUrl}.git"
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.slf4j:slf4j-api:2.0.7'
+
+    testImplementation 'ch.qos.logback:logback-classic:1.4.11'
+
+    testImplementation platform("org.spockframework:spock-bom:2.3-groovy-4.0")
+    testImplementation "org.spockframework:spock-core"
+
+    testRuntimeOnly 'net.bytebuddy:byte-buddy:1.12.17'
+    testRuntimeOnly "org.objenesis:objenesis:3.3"
+}
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = "UTF-8"
+}
+
+tasks.withType(Javadoc).configureEach {
+    options {
+        encoding = "UTF-8"
+        locale("en_US")
+        jFlags("-Duser.language=en_US")
+    }
+
+    if (JavaVersion.current().isJava9Compatible()) {
+        options.addBooleanOption("html5", true)
+    }
+}
+
+testing {
+    suites {
+        test {
+            useSpock()
+        }
+    }
+}
+
+license {
+    ext.year = Calendar.getInstance().get(Calendar.YEAR)
+    header project.file("gradle/license-header")
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+
+            pom {
+                name = "$group:${project.name}"
+                description = project.description
+                url = projectUrl
+
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+
+                developers {
+                    developer {
+                        name = "pvtyuan"
+                        email = "yyz139@gmail.com"
+                    }
+                }
+
+                scm {
+                    connection = "scm:git:${vcsUrl}"
+                    developerConnection = "scm:git:${vcsUrl}"
+                    url = projectUrl
+                }
+            }
+        }
+    }
+}
+
+release {
+    failOnUnversionedFiles = false
+    pushReleaseVersionBranch = "master"
+    git {
+        requireBranch.set("master")
+    }
+}
+
+signing {
+    sign publishing.publications.mavenJava
+}
+
+nexusPublishing.repositories {
+    sonatype()
+}
+
+tasks.named("closeAndReleaseSonatypeStagingRepository") {
+    dependsOn("publishToSonatype")
+}
+tasks.afterReleaseBuild {
+    dependsOn("closeAndReleaseSonatypeStagingRepository")
+}
